@@ -167,8 +167,8 @@ class ODEnlls():
         '''
         self.rxnFileName = filename
         self.rxnFileComments = []
-        self.kGuess = []
-        self.cpds = []
+        ks = []
+        cpds = []
         self.odes = []
         self.rxns = []
         count = 1
@@ -187,18 +187,21 @@ class ODEnlls():
                 print("There was an error with your reaction file!")
                 return False
             count += len(ktemp)
-            self.kGuess.extend(ktemp)
+            ks.extend(ktemp)
             for num, v in enumerate(vtemp):
-                if v not in self.cpds:
-                    self.cpds.append(v)
+                if v not in cpds:
+                    cpds.append(v)
                     self.odes.append(rtemp[num])
                 else:
-                    index = self.cpds.index(v)
+                    index = cpds.index(v)
                     self.odes[index] += ' + %s' % rtemp[num]
         fileobj.close()
-        self.cGuess = [0.0 for v in self.cpds]
+        
+        klabel = ['k{:d}'.format(i+1) for i in range(len(ks))]
+        self.params = pd.DataFrame(np.nan, columns=['guess', 'fix'], 
+                                index=cpds + klabel)
 
-        self.functString = self._functGen(self.odes, self.kGuess, self.cpds)
+        self.functString = self._functGen(self.odes, ks, cpds)
         temp = {}
         exec(self.functString, temp)
         self.function = temp['f']
