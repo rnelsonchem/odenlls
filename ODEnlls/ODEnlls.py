@@ -457,6 +457,37 @@ class ODEnlls():
         self.fitPar = p; self.sigma = sigma; self.chiSq = chiSq
         self.rSqrd = rSqrd; self.dof = dof
 
+    def set_param(self, *args, ptype='guess'):
+        '''docstring: TODO
+        '''
+        if ptype not in ['guess', 'fix']:
+            raise ValueError('ptype parameter can only be "guess" or "fix".')
+
+        if isinstance(args[0], str) and len(args) == 2:
+            pars = {args[0]:args[1],}
+
+        elif isinstance(args[0], dict):
+            pars = args[0]
+
+        else:
+            raise ValueError('There is something wrong with your input.')
+
+        for row in pars:
+            if row not in self.params.index:
+                raise ValueError('The row {} is not valid.'.format(row))
+
+            value = pars[row]
+            if not isinstance(value, float):
+                try:
+                    value = float(value)
+                except:
+                    er = 'The parameter "{}" for row "{}" must be '\
+                        'convertable to a float.'
+                    print(er.format(value, row))
+                    raise
+
+            self.params.loc[row, ptype] = value
+
     ##### FILE OUTPUT METHODS #####
 
     def saveFigure(self, fname, type='pdf'):
