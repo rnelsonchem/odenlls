@@ -205,11 +205,19 @@ class ODEnlls():
 
     def read_data(self, filename, comment='#'):
         '''
-        Read in a comma-separated file of data. This will skip blank lines and
-        '#' commented lines; however, the first line before the data must be a
-        comma separated list of column labels (excluding 'Time') and starting
-        with 'Labels'. For fitting purposes, the column labels should match
-        the compounds labels from the reaction file.
+        Read in a comma-separated data file. 
+        
+        This function simply reads the data file into a Pandas DataFrame
+        attribute. 
+
+        Parameters
+        ----------
+        filename : string
+            The name of the data file. Can be a relative or full path as well.
+            See Pandas.read_csv for more info. 
+
+        comment : string
+            The character that will denote the start of comments in the file. 
         '''
         self.data = pd.read_csv(filename, comment=comment)
 
