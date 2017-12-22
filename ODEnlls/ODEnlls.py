@@ -393,26 +393,28 @@ class ODEnlls():
                 res_arry += list(resids)
         return res_arry
 
-    def fitData(self):
+    def run_fit(self):
         '''
         The data fitting function.
         '''
         # Normalize the data if necessary.
-        for key in self.useData:
-            if self.useNorm == True:
-                self.useData[key] = self._normalize(self.inData[key])
-            elif self.useNorm == False:
-                self.useData[key] = self.inData[key]
+#        for key in self.useData:
+#            if self.useNorm == True:
+#                self.useData[key] = self._normalize(self.inData[key])
+#            elif self.useNorm == False:
+#                self.useData[key] = self.inData[key]
 
         # Get parameters for the fitting process. Skip the fixed variables,
         # which should be strings.
-        params = []
-        for x in self.cGuess + self.kGuess:
-            if isinstance(x, str): continue
-            else: params.append( float(x) )
+#        params = []
+#        for x in self.cGuess + self.kGuess:
+#            if isinstance(x, str): continue
+#            else: params.append( float(x) )
+        mask = self.params['guess'].isna()
+        fitpars = list(self.params.loc[~mask, 'guess']) 
         
         # Fit the data and convert the output to various lists.
-        fitdata = spo.leastsq(self._residTotal, params, full_output=1)
+        fitdata = spo.leastsq(self._residTotal, fitpars, full_output=1)
         p, cov, info, mesg, success = fitdata 
         if success not in [1,2,3,4] or type(cov) == type(None):
             print('There was a fitting error.')
