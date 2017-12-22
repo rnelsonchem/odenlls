@@ -6,12 +6,11 @@ October 2010
 '''
 import pickle
 
-import matplotlib.pyplot as plt
-
 import numpy as np 
-
+import matplotlib.pyplot as plt
 import scipy.optimize as spo 
 import scipy.integrate as spi 
+import pandas as pd
 
 
 class ODEnlls():
@@ -204,7 +203,7 @@ class ODEnlls():
         exec(self.functString, temp)
         self.function = temp['f']
 
-    def dataFile(self, filename):
+    def read_data(self, filename, comment='#'):
         '''
         Read in a comma-separated file of data. This will skip blank lines and
         '#' commented lines; however, the first line before the data must be a
@@ -212,29 +211,8 @@ class ODEnlls():
         with 'Labels'. For fitting purposes, the column labels should match
         the compounds labels from the reaction file.
         '''
-        self.dataFileName = filename
-        self.dataFileComments = []
-        self.inData = {}
-        fileobj = open(filename)
-        temp = []
-        for line in fileobj:
-            if line.isspace(): continue
-            elif line[0] == '#': 
-                self.dataFileComments.append( line.strip() )
-                continue
-            else:
-                sp = line.split(',')
-                temp.append(sp)
-        for num, label in enumerate(temp[0]):
-            if label == 'Time':
-                self.times = np.array([float(x[num]) for x in temp[1:]])
-            else:
-                self.inData[label.strip()] = \
-                        np.array([float(x[num]) for x in temp[1:]])
-        self.useData = {}
-        for key in self.inData:
-            self.useData[key] = self.inData[key][:]
-        fileobj.close()
+        self.data = pd.read_csv(filename, comment=comment)
+
 
     ##### DATA MODIFICATION METHODS #####
                 
