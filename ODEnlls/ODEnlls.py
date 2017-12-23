@@ -391,9 +391,18 @@ class ODEnlls():
             print('There was a fitting error.')
             return False
 
+        # Set the fit parameters in the `params` DataFrame
         self.params['fit'] = 0.0
         self.params.loc[mask, 'fit'] = p
         self.params.loc[~mask, 'fit'] = self.params.loc[~mask, 'fix']
+
+        # Create a residuals DataFrame. I need to be careful to match the data
+        # up to the correct DataFrame columns.
+        vals_shape = self.data.iloc[:,1:].values.shape
+        res_temp = info["fvec"].reshape(vals_shape)
+        cpds = self.params.filter(regex=r'^(?!k\d+$)', axis=0)
+        self.residuals = self.data.copy()
+        self.residuals[cpds.index] = res_temp
 
 #        self.sigma = sigma; self.chiSq = chiSq
 #        self.rSqrd = rSqrd; self.dof = dof
