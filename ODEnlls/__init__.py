@@ -1,1 +1,1 @@
-from .ODEnlls import ODEnlls, aicCalc, weightAic 
+from .ODEnlls import ODEnlls, weightAic 
