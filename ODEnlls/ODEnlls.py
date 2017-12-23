@@ -413,9 +413,6 @@ class ODEnlls():
         yave_diff = ((raw - y_ave)**2).sum()
         self.rsq = 1.0 - (self.chisq/yave_diff)
 
-#        self.sigma = sigma; 
-#        self.dof = dof
-        
         # Akaike's Information Criterion. The use of this parameter is based
         # on the following reference, which is specific to chemical kinetics
         # fitting: Chem. Mater. 2009, 21, 4468-4479 The above reference gives
@@ -425,11 +422,15 @@ class ODEnlls():
         lenfvec = len(info["fvec"])
         self.aic = lenfvec*np.log(self.chisq) + 2*lenp + \
                 ( 2*lenp*(lenp + 1) )/(lenfvec - lenp - 1)
-#
-#        dof = len(info["fvec"]) - len(p)
-#        sigma = np.array([np.sqrt(cov[i,i])*np.sqrt(chiSq/dof) for i in
-#            range(len(p))])
-#        
+
+        # Calculate parameter errors. Make sure that parameter errors don't
+        # get set for fixed values
+        self.dof = lenfvec - lenp
+        sqcsdof = np.sqrt(self.chisq/self.dof)
+        sigma = np.sqrt(np.diag(cov))*sqcsdof
+        self.params['error'] = np.nan
+        self.params.loc[mask, 'error'] = sigma
+
 
     def set_param(self, *args, ptype='guess'):
         '''docstring: TODO
