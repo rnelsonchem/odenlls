@@ -13,44 +13,73 @@ import pandas as pd
 class ODEnlls():
     ##### FILE INPUT METHODS #####
 
-    def _halfRxn(self, half):
+    def read_data(self, filename, comment='#'):
         '''
-        Break apart a half reaction. Returns a lists of reactants and their
-        corresponding rate expressions.
+        Read in a comma-separated data file. 
+        
+        This function simply reads the data file into a Pandas DataFrame
+        attribute. 
+
+        Parameters
+        ----------
+        filename : string
+            The name of the data file. Can be a relative or full path as well.
+            See Pandas.read_csv for more info. 
+
+        comment : string
+            The character that will denote the start of comments in the file. 
         '''
-        reactants = []
-        stoic = []
-        rate = ''
+        self.data = pd.read_csv(filename, comment=comment)
 
-        if '+' in half:
-            sp = half.split('+')
-            sp = [x.strip() for x in sp]
-            for i in sp:
-                if sp.count(i) > 1:
-                    print("You've used an improper format.", )
-                    print("For example, instead of 'A + A' use '2*A'.")
-                    return False
-        else:
-            sp = [half.strip()]
+    def read_rxns(self, filename):
+        '''
+        Takes a file name of fundamental reaction steps and breaks them up
+        into lists of ODEs, compounds, reactions, equilibrium constants, and
+        initial concentrations.
 
-        for comp in sp:
-            if '*' in comp:
-                sp2 = comp.split('*')
-                reactants.append(sp2[1])
-                stoic.append( float( sp2[0] ) )
-                temp = '(%s**%.2f)/%.2f' % (sp2[1], stoic[-1], stoic[-1])
-            else:
-                reactants.append(comp)
-                temp = comp 
-                stoic.append( 1.0 )
+        The reaction file must have one reaction per line. Reaction components
+        must be separated by '+'; stoichiometry can be included using '*'
+        (e.g. 2*A for two equivalents of A); irreversible reactions are
+        denoted by '->'; reversible reactions are denoted by '='.
+        '''
+        cpds = []
+        self.odes = []
+        self.rxns = []
+        count = 1
 
-            if rate == '':
-                rate = '(%s)' % temp
-            else:
-                rate += '*(%s)' % temp
+        fileobj = open(filename)
+        for rxn in fileobj:
+            if rxn.isspace(): continue
+            elif rxn[0] == '#': continue
+            
+            rxn = rxn.strip()
+            self.rxns.append(rxn)
+            try:
+                kcount, vtemp, rtemp = self._rxnRate(rxn, count=count)
+            except:
+                print("There was an error with your reaction file!")
+                print("See line: {}".format(rxn))
+                return False
 
-        return reactants, rate, stoic
-    
+            count += kcount 
+            for num, v in enumerate(vtemp):
+                if v not in cpds:
+                    cpds.append(v)
+                    self.odes.append(rtemp[num])
+                else:
+                    index = cpds.index(v)
+                    self.odes[index] += ' + %s' % rtemp[num]
+        fileobj.close()
+        
+        klabel = ['k{:d}'.format(i) for i in range(1, count)]
+        self.params = pd.DataFrame(np.nan, columns=['guess', 'fix'], 
+                                index=cpds + klabel)
+
+        self.functString = self._functGen(self.odes, count, cpds)
+        temp = {}
+        exec(self.functString, temp)
+        self.function = temp['f']
+
     def _rxnRate(self, rxn, count=1):
         '''
         Convert a fundamental reaction into lists of equilibrium constants
@@ -116,6 +145,44 @@ class ODEnlls():
     
         return kcount, cmpds, rxns
 
+    def _halfRxn(self, half):
+        '''
+        Break apart a half reaction. Returns a lists of reactants and their
+        corresponding rate expressions.
+        '''
+        reactants = []
+        stoic = []
+        rate = ''
+
+        if '+' in half:
+            sp = half.split('+')
+            sp = [x.strip() for x in sp]
+            for i in sp:
+                if sp.count(i) > 1:
+                    print("You've used an improper format.", )
+                    print("For example, instead of 'A + A' use '2*A'.")
+                    return False
+        else:
+            sp = [half.strip()]
+
+        for comp in sp:
+            if '*' in comp:
+                sp2 = comp.split('*')
+                reactants.append(sp2[1])
+                stoic.append( float( sp2[0] ) )
+                temp = '(%s**%.2f)/%.2f' % (sp2[1], stoic[-1], stoic[-1])
+            else:
+                reactants.append(comp)
+                temp = comp 
+                stoic.append( 1.0 )
+
+            if rate == '':
+                rate = '(%s)' % temp
+            else:
+                rate += '*(%s)' % temp
+
+        return reactants, rate, stoic
+    
     def _functGen(self, rates, count, vars):
         '''
         Take lists of rates, equilibrium constants, and reaction components
@@ -135,74 +202,6 @@ class ODEnlls():
             funct += '%s%s,\n' % (' '*8, rate)
         funct += '%s]' % (' '*8,)
         return funct
-
-    def read_rxns(self, filename):
-        '''
-        Takes a file name of fundamental reaction steps and breaks them up
-        into lists of ODEs, compounds, reactions, equilibrium constants, and
-        initial concentrations.
-
-        The reaction file must have one reaction per line. Reaction components
-        must be separated by '+'; stoichiometry can be included using '*'
-        (e.g. 2*A for two equivalents of A); irreversible reactions are
-        denoted by '->'; reversible reactions are denoted by '='.
-        '''
-        cpds = []
-        self.odes = []
-        self.rxns = []
-        count = 1
-
-        fileobj = open(filename)
-        for rxn in fileobj:
-            if rxn.isspace(): continue
-            elif rxn[0] == '#': continue
-            
-            rxn = rxn.strip()
-            self.rxns.append(rxn)
-            try:
-                kcount, vtemp, rtemp = self._rxnRate(rxn, count=count)
-            except:
-                print("There was an error with your reaction file!")
-                print("See line: {}".format(rxn))
-                return False
-
-            count += kcount 
-            for num, v in enumerate(vtemp):
-                if v not in cpds:
-                    cpds.append(v)
-                    self.odes.append(rtemp[num])
-                else:
-                    index = cpds.index(v)
-                    self.odes[index] += ' + %s' % rtemp[num]
-        fileobj.close()
-        
-        klabel = ['k{:d}'.format(i) for i in range(1, count)]
-        self.params = pd.DataFrame(np.nan, columns=['guess', 'fix'], 
-                                index=cpds + klabel)
-
-        self.functString = self._functGen(self.odes, count, cpds)
-        temp = {}
-        exec(self.functString, temp)
-        self.function = temp['f']
-
-    def read_data(self, filename, comment='#'):
-        '''
-        Read in a comma-separated data file. 
-        
-        This function simply reads the data file into a Pandas DataFrame
-        attribute. 
-
-        Parameters
-        ----------
-        filename : string
-            The name of the data file. Can be a relative or full path as well.
-            See Pandas.read_csv for more info. 
-
-        comment : string
-            The character that will denote the start of comments in the file. 
-        '''
-        self.data = pd.read_csv(filename, comment=comment)
-
 
     ##### PLOTTING METHODS #####
             
@@ -279,30 +278,36 @@ class ODEnlls():
     
     ##### FITTING METHODS #####
 
-    def _residTotal(self, pars):
+    def set_param(self, *args, ptype='guess'):
+        '''docstring: TODO
         '''
-        Generate and return one list of all the residuals.
+        if ptype not in ['guess', 'fix']:
+            raise ValueError('ptype parameter can only be "guess" or "fix".')
 
-        This function generates residuals by comparing the differences between
-        the ODE and the actual data only when the ODE compound name
-        (self.cpds) is one of the data set names (keys of self.useData).
-        '''
-        # Make a temporary parameter set so the original is unaffected.
-        guesses = self.params['guess'].copy()
-        mask = guesses.notna()
-        guesses.loc[mask] = pars
-        guesses.loc[~mask] = self.params.loc[~mask, 'fix']
-        conc = guesses.filter(regex=r'^(?!k\d+$)')
-        ks = guesses.filter(regex=r'^k\d+$')
-        times = list(self.data.iloc[:,0])
-        
-        # Run the ODE simulation.
-        self._solution = spi.odeint(self.function, y0=list(conc), t=times,
-                args=tuple(ks))
+        if isinstance(args[0], str) and len(args) == 2:
+            pars = {args[0]:args[1],}
 
-        # Make the return np.array of residuals
-        res = self.data[conc.index].values - self._solution
-        return res.flatten()
+        elif isinstance(args[0], dict):
+            pars = args[0]
+
+        else:
+            raise ValueError('There is something wrong with your input.')
+
+        for row in pars:
+            if row not in self.params.index:
+                raise ValueError('The row {} is not valid.'.format(row))
+
+            value = pars[row]
+            if not isinstance(value, float):
+                try:
+                    value = float(value)
+                except:
+                    er = 'The parameter "{}" for row "{}" must be '\
+                        'convertable to a float.'
+                    print(er.format(value, row))
+                    raise
+
+            self.params.loc[row, ptype] = value
 
     def run_fit(self):
         '''
@@ -359,37 +364,30 @@ class ODEnlls():
         self.params['error'] = np.nan
         self.params.loc[mask, 'error'] = sigma
 
-
-    def set_param(self, *args, ptype='guess'):
-        '''docstring: TODO
+    def _residTotal(self, pars):
         '''
-        if ptype not in ['guess', 'fix']:
-            raise ValueError('ptype parameter can only be "guess" or "fix".')
+        Generate and return one list of all the residuals.
 
-        if isinstance(args[0], str) and len(args) == 2:
-            pars = {args[0]:args[1],}
+        This function generates residuals by comparing the differences between
+        the ODE and the actual data only when the ODE compound name
+        (self.cpds) is one of the data set names (keys of self.useData).
+        '''
+        # Make a temporary parameter set so the original is unaffected.
+        guesses = self.params['guess'].copy()
+        mask = guesses.notna()
+        guesses.loc[mask] = pars
+        guesses.loc[~mask] = self.params.loc[~mask, 'fix']
+        conc = guesses.filter(regex=r'^(?!k\d+$)')
+        ks = guesses.filter(regex=r'^k\d+$')
+        times = list(self.data.iloc[:,0])
+        
+        # Run the ODE simulation.
+        self._solution = spi.odeint(self.function, y0=list(conc), t=times,
+                args=tuple(ks))
 
-        elif isinstance(args[0], dict):
-            pars = args[0]
-
-        else:
-            raise ValueError('There is something wrong with your input.')
-
-        for row in pars:
-            if row not in self.params.index:
-                raise ValueError('The row {} is not valid.'.format(row))
-
-            value = pars[row]
-            if not isinstance(value, float):
-                try:
-                    value = float(value)
-                except:
-                    er = 'The parameter "{}" for row "{}" must be '\
-                        'convertable to a float.'
-                    print(er.format(value, row))
-                    raise
-
-            self.params.loc[row, ptype] = value
+        # Make the return np.array of residuals
+        res = self.data[conc.index].values - self._solution
+        return res.flatten()
 
 
 # This function will determine the Akaike weights from a series of Akaike
