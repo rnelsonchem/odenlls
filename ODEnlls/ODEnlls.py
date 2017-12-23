@@ -205,7 +205,7 @@ class ODEnlls():
 
     ##### PLOTTING METHODS #####
             
-    def displayPlot(self, type='guess', legend=True, colorLines=False):
+    def plot(self, plottype='guess', legend=True, colorlines=False):
         '''
         Display a plot of the ODE silulation and/or data.
 
@@ -221,60 +221,34 @@ class ODEnlls():
         The colorLines boolean controls whether the ode lines are colored or
         black.
         '''
-        # Make sure the correct figure number is being used, and if already
-        # present, clear it and start over.
-        plt.figure(self.figNum)
-        if plt.fignum_exists(self.figNum):
-            plt.clf()
+        if plottype in ['sim', 'guess', 'fit']:
+            startt = self.data.iloc[0, 0]
+            finalt = self.data.iloc[-1, 0]
+            times = np.linspace(startt, 1.05*finalt, 1000)
 
-        # Get to the actual plotting.
-        # Plot types that contain the data. Be sure to normalize the data if
-        # requested.
-        if (type == 'data' or type == 'guess' or type == 'fit'):
-            for key in self.useData:
-                if self.useNorm == True:
-                    self.useData[key] = self._normalize(self.inData[key])
-                    plt.plot(self.times, self.useData[key], 'o', label=key)
-                else:
-                    self.useData[key] = self.inData[key]
-                    plt.plot(self.times, self.useData[key], 'o', label=key)
-            if type == 'guess' or type == 'fit':
-                if type == 'guess': ctemp, ktemp = self._paramConvert()
-                elif type == 'fit': ctemp, ktemp = \
-                        self._paramConvert(params=self.fitPar)
-                self._ODEplot(ctemp, ktemp, color=colorLines)
-        
-        # This simply plots the ODE simulation lines.
-        elif type == 'sim':
-            if legend == True and colorLines == False: legend = False
-            ctemp, ktemp = self._paramConvert()
-            self._ODEplot(ctemp, ktemp, color=colorLines) 
+            if plottype == 'fit':
+                solution = self._sim_odes(pars='fit', times=times)
+            else: 
+                solution = self._sim_odes(times=times)
 
-        # Plot the residuals of the data minus the ode solution.
-        elif type == 'res':
-            for key in self.resid:
-                plt.plot(self.times, self.resid[key], '-o', label=key)
+            if plottype != 'sim' or colorlines == False:
+                plt.plot(times, solution, 'k-')
+                legend = False
+            else:
+                conc = self.params.filter(regex=r'^(?!k\d+$)', axis=0).index
+                for n, c in enumerate(conc):
+                    plt.plot(times, solution[:,n], label=c)
+            
+        if plottype in ['guess', 'fit', 'data']:
+            for col in self.data.columns[1:]:
+                plt.plot(self.data.iloc[:,0], self.data[col], 'o', label=col)
 
-        if legend == True: plt.legend(numpoints=1)        
-        plt.draw()
+        if plottype == 'res':
+            for col in self.residuals.columns[1:]:
+                plt.plot(self.residuals.iloc[:,0], self.residuals[col],
+                        'o-', label=col)
 
-    def _ODEplot(self, c, k, color=False):
-        '''
-        Generic plotting function for the systems ODEs. Needs a list of
-        concentrations and equilibrium constants (as floats), respectively.
-        '''
-        if self.times != []:
-            self.odeTimes = np.linspace(0, 1.05*self.times[-1], 1000)
-        else:
-            self.odeTimes = np.linspace(0, 100, 1000)
-        self._solution = spi.odeint(self.function, y0=c, args=tuple(k), 
-                t=self.odeTimes)
-        self._odeSolConvert()
-        for n, cpd in enumerate(self.cpds):
-            if color == False:
-                plt.plot(self.odeTimes, self.odeData[n], 'k-')
-            elif color == True:
-                plt.plot(self.odeTimes, self.odeData[n], '-', label=cpd)
+        if legend == True: plt.legend(numpoints=1)
     
     ##### FITTING METHODS #####
 
@@ -372,22 +346,38 @@ class ODEnlls():
         the ODE and the actual data only when the ODE compound name
         (self.cpds) is one of the data set names (keys of self.useData).
         '''
+        solution = self._sim_odes(pars=pars)
+        
+        # Make the return np.array of residuals
+        conc = self.params.filter(regex=r'^(?!k\d+$)', axis=0)
+        res = self.data[conc.index].values - solution
+        # It must be 1D to work properly
+        return res.flatten()
+
+    def _sim_odes(self, pars=None, times=None):
+        '''Run an ODE simulation with the given parameters.
+        '''
         # Make a temporary parameter set so the original is unaffected.
-        guesses = self.params['guess'].copy()
-        mask = guesses.notna()
-        guesses.loc[mask] = pars
-        guesses.loc[~mask] = self.params.loc[~mask, 'fix']
+        if isinstance(pars, str) and pars == 'fit':
+            guesses = self.params['fit'].copy()
+            mask = guesses.notna()
+        else:
+            guesses = self.params['guess'].copy()
+            mask = guesses.notna()
+            if not isinstance(pars, type(None)):
+                guesses.loc[mask] = pars
+            guesses.loc[~mask] = self.params.loc[~mask, 'fix']
+
         conc = guesses.filter(regex=r'^(?!k\d+$)')
         ks = guesses.filter(regex=r'^k\d+$')
-        times = list(self.data.iloc[:,0])
+
+        if isinstance(times, type(None)):
+            times = list(self.data.iloc[:,0])
         
-        # Run the ODE simulation.
-        self._solution = spi.odeint(self.function, y0=list(conc), t=times,
+        solution = spi.odeint(self.function, y0=list(conc), t=times,
                 args=tuple(ks))
 
-        # Make the return np.array of residuals
-        res = self.data[conc.index].values - self._solution
-        return res.flatten()
+        return solution
 
 
 # This function will determine the Akaike weights from a series of Akaike
