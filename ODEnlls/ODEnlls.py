@@ -413,40 +413,18 @@ class ODEnlls():
         yave_diff = ((raw - y_ave)**2).sum()
         self.rsq = 1.0 - (self.chisq/yave_diff)
 
-#        self.sigma = sigma; self.chiSq = chiSq
-#        self.rSqrd = rSqrd; self.dof = dof
+#        self.sigma = sigma; 
+#        self.dof = dof
         
-#        # Get the fit residuals and the average y value for the fitted data
-#        # set (for statistical purposes).
-#        self.resid = {}
-#        num = 0
-#        y_ave = 0
-#        for k in self.useData:
-#            if k in self.cpds:
-#                self.resid[k] = info["fvec"][num:len(self.useData[k])+num]
-#                num += len(self.useData[k])
-#                y_ave += sum(self.useData[k])
-#        y_ave /= len(info["fvec"])
-#        
-#        # Calculate the sum of squared differences of the data y values from
-#        # the average y value, again for statistical purposes.
-#        yave_diff = 0
-#        for k in self.useData:
-#            if k in self.cpds:
-#                yave_diff += sum((self.useData[k]-y_ave)**2)
-#
-#        # Calculate the statistical parameters for the fit.
-#        chiSq = sum(info["fvec"]*info["fvec"])
-#        rSqrd = 1.0 - (chiSq/yave_diff)
-#
-#        # This is an additional statistical parameter for the fit called
-#        # Akaike's Information Criterion. The use of this parameter is based
-#        # on the following reference, which is specific to chemical kinetics
-#        # fitting: Chem. Mater. 2009, 21, 4468-4479 The above reference gives
-#        # a number of additional references that are not directly related to
-#        # chemical kinetics.
-#        self.aic = len(info["fvec"])*np.log(chiSq) + 2*len(p) + \
-#                ( 2*len(p)*(len(p) + 1) )/(len(info["fvec"]) - len(p) - 1)
+        # Akaike's Information Criterion. The use of this parameter is based
+        # on the following reference, which is specific to chemical kinetics
+        # fitting: Chem. Mater. 2009, 21, 4468-4479 The above reference gives
+        # a number of additional references that are not directly related to
+        # chemical kinetics.
+        lenp = len(p)
+        lenfvec = len(info["fvec"])
+        self.aic = lenfvec*np.log(self.chisq) + 2*lenp + \
+                ( 2*lenp*(lenp + 1) )/(lenfvec - lenp - 1)
 #
 #        dof = len(info["fvec"]) - len(p)
 #        sigma = np.array([np.sqrt(cov[i,i])*np.sqrt(chiSq/dof) for i in
