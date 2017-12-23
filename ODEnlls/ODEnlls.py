@@ -404,6 +404,9 @@ class ODEnlls():
         self.residuals = self.data.copy()
         self.residuals[cpds.index] = res_temp
 
+        # Chi squared
+        self.chisq = (info["fvec"]**2).sum()
+
 #        self.sigma = sigma; self.chiSq = chiSq
 #        self.rSqrd = rSqrd; self.dof = dof
         
