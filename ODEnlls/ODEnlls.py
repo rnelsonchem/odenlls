@@ -225,57 +225,6 @@ class ODEnlls():
         self.data = pd.read_csv(filename, comment=comment)
 
 
-    ##### DATA MODIFICATION METHODS #####
-                
-    def _normalize(self, alist):
-        '''
-        Normalization function... This needs updating. rcn 10.01.10
-        '''
-        minval = min(alist)
-        maxval = max(alist)
-        return ((alist - minval)/(maxval - minval)) 
-
-    def _odeSolConvert(self):
-        '''
-        Convert the ODE simulation solution into usable np.arrays.
-
-        The ODE simulation gives the solution as an np.array for each time
-        point, but plotting is easier with a each solution as an individual
-        np.array.
-        '''
-        self.odeData = []
-        for n in range(len(self._solution[0])):
-            temp = self._solution[:,n]
-            if self.useNorm == True:
-                temp = self._normalize(temp)
-            self.odeData.append(temp)
-
-    def _paramConvert(self, params=None):
-        '''
-        Check the concentration and equilibrium constant guesses for fixed
-        values (strings) and make new output lists of floats instead. If a
-        params list is given, use those values for the non-fixed values.
-        '''
-        k_temp = []
-        c_temp = []
-        if type(params) != type(None): params = list(params)
-
-        for c in self.cGuess:
-            if isinstance(c, str):
-                c_temp.append(float(c))
-            else:
-                if params == None: c_temp.append(float(c))
-                else: c_temp.append(params.pop(0))
-
-        for k in self.kGuess:
-            if isinstance(k, str):
-                k_temp.append(float(k))
-            else:
-                if params == None: k_temp.append(float(k))
-                else: k_temp.append(params.pop(0))
-
-        return c_temp, k_temp
-    
     ##### PLOTTING METHODS #####
             
     def displayPlot(self, type='guess', legend=True, colorLines=False):
