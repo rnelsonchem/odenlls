@@ -398,7 +398,8 @@ class ODEnlls():
 
         # Create a residuals DataFrame. I need to be careful to match the data
         # up to the correct DataFrame columns.
-        vals_shape = self.data.iloc[:,1:].values.shape
+        raw = self.data.iloc[:,1:].values
+        vals_shape = raw.shape
         res_temp = info["fvec"].reshape(vals_shape)
         cpds = self.params.filter(regex=r'^(?!k\d+$)', axis=0)
         self.residuals = self.data.copy()
@@ -406,6 +407,11 @@ class ODEnlls():
 
         # Chi squared
         self.chisq = (info["fvec"]**2).sum()
+
+        # R-squared
+        y_ave = raw.mean()
+        yave_diff = ((raw - y_ave)**2).sum()
+        self.rsq = 1.0 - (self.chisq/yave_diff)
 
 #        self.sigma = sigma; self.chiSq = chiSq
 #        self.rSqrd = rSqrd; self.dof = dof
