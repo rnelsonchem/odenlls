@@ -139,7 +139,7 @@ class ODEnlls():
         funct += '%s]' % (' '*8,)
         return funct
 
-    def rxnFile(self, filename):
+    def read_rxns(self, filename):
         '''
         Takes a file name of fundamental reaction steps and breaks them up
         into lists of ODEs, compounds, reactions, equilibrium constants, and
@@ -150,27 +150,26 @@ class ODEnlls():
         (e.g. 2*A for two equivalents of A); irreversible reactions are
         denoted by '->'; reversible reactions are denoted by '='.
         '''
-        self.rxnFileName = filename
-        self.rxnFileComments = []
         ks = []
         cpds = []
         self.odes = []
         self.rxns = []
         count = 1
 
-        fileobj = open(self.rxnFileName)
+        fileobj = open(filename)
         for rxn in fileobj:
             if rxn.isspace(): continue
-            elif rxn[0] == '#': 
-                self.rxnFileComments.append( rxn.strip() )
-                continue
+            elif rxn[0] == '#': continue
+            
             rxn = rxn.strip()
             self.rxns.append(rxn)
             try:
                 ktemp, vtemp, rtemp = self._rxnRate(rxn, count=count)
             except:
                 print("There was an error with your reaction file!")
+                print("See line: {}".format(rxn))
                 return False
+
             count += len(ktemp)
             ks.extend(ktemp)
             for num, v in enumerate(vtemp):
