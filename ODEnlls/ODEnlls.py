@@ -61,7 +61,6 @@ class ODEnlls():
         '''
         cmpds = []
         rxns = []
-        ks = []
    
         # Determine the reaction type -- reversible or not -- and split the
         # reaction accordingly.
@@ -88,13 +87,11 @@ class ODEnlls():
         if rev == False:
             sm_rate = '-1*k%d*%s' % (count, lrate)
             pr_rate = 'k%d*%s' % (count, lrate)
-            ks = [0.0]
-            #count += 1
+            kcount = 1
         elif rev == True:
             sm_rate = '-1*k%d*%s + k%d*%s' % (count, lrate, count+1, rrate)
             pr_rate = 'k%d*%s + -1*k%d*%s' % (count, lrate, count+1, rrate)
-            ks = [0.0, 0.0]
-            #count += 2
+            kcount = 2
         
         # For each compound on the left side of the reaction, add the name to
         # our compounds list and the corresponding rate expression to our rate
@@ -117,16 +114,16 @@ class ODEnlls():
                 newcoef = coef - lstoic[index]
                 rxns[index] = '%.2f*(%s)' % (newcoef, pr_rate)
     
-        return ks, cmpds, rxns
+        return kcount, cmpds, rxns
 
-    def _functGen(self, rates, ks, vars):
+    def _functGen(self, rates, count, vars):
         '''
         Take lists of rates, equilibrium constants, and reaction components
         and creates a Python function string. This string will work with
         scipy.odeint function, but needs to be modified if using the Sage ODE
         simulations.
         '''
-        k_labels = ['k%d' % (num+1,) for num in range(len(ks))]
+        k_labels = ['k%d' % (num,) for num in range(1, count)]
         funct = 'def f(y, t'
         for k in k_labels:
             funct += ', %s' % k
@@ -150,7 +147,6 @@ class ODEnlls():
         (e.g. 2*A for two equivalents of A); irreversible reactions are
         denoted by '->'; reversible reactions are denoted by '='.
         '''
-        ks = []
         cpds = []
         self.odes = []
         self.rxns = []
@@ -164,14 +160,13 @@ class ODEnlls():
             rxn = rxn.strip()
             self.rxns.append(rxn)
             try:
-                ktemp, vtemp, rtemp = self._rxnRate(rxn, count=count)
+                kcount, vtemp, rtemp = self._rxnRate(rxn, count=count)
             except:
                 print("There was an error with your reaction file!")
                 print("See line: {}".format(rxn))
                 return False
 
-            count += len(ktemp)
-            ks.extend(ktemp)
+            count += kcount 
             for num, v in enumerate(vtemp):
                 if v not in cpds:
                     cpds.append(v)
@@ -181,11 +176,11 @@ class ODEnlls():
                     self.odes[index] += ' + %s' % rtemp[num]
         fileobj.close()
         
-        klabel = ['k{:d}'.format(i+1) for i in range(len(ks))]
+        klabel = ['k{:d}'.format(i) for i in range(1, count)]
         self.params = pd.DataFrame(np.nan, columns=['guess', 'fix'], 
                                 index=cpds + klabel)
 
-        self.functString = self._functGen(self.odes, ks, cpds)
+        self.functString = self._functGen(self.odes, count, cpds)
         temp = {}
         exec(self.functString, temp)
         self.function = temp['f']
