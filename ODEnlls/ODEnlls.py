@@ -359,59 +359,30 @@ class ODEnlls():
         the ODE and the actual data only when the ODE compound name
         (self.cpds) is one of the data set names (keys of self.useData).
         '''
-
-        # If the first data time point is not 0, then add it into the time
-        # np.array. 
-        if self.times[0] != 0:
-            t_temp = [0]
-            t_temp.extend(self.times)
-            t_temp = np.array(t_temp)
-            zero_add = True
-        else: 
-            t_temp = self.times
-            zero_add = False
-        
         # Make a temporary parameter set so the original is unaffected.
-        y0, k_temp = self._paramConvert(pars[:])
+        guesses = self.params['guess'].copy()
+        mask = guesses.notna()
+        guesses.loc[mask] = pars
+        guesses.loc[~mask] = self.params.loc[~mask, 'fix']
+        conc = guesses.filter(regex=r'^(?!k\d+$)')
+        ks = guesses.filter(regex=r'^k\d+$')
+        times = list(self.data.iloc[:,0])
         
         # Run the ODE simulation.
-        self._solution = spi.odeint(self.function, y0=y0, t=t_temp,
-                args=tuple(k_temp))
-
-        # Remove the initial zeros if necessary and convert the solution to
-        # useable np.arrays
-        if zero_add == True:
-            self._solution = self._solution[1:]
-        self._odeSolConvert()
+        self._solution = spi.odeint(self.function, y0=list(conc), t=times,
+                args=tuple(ks))
 
         # Make the return np.array of residuals
-        res_arry = []
-        for k in self.useData:
-            if k in self.cpds:
-                num = self.cpds.index(k)
-                resids = self.useData[k] - self.odeData[num]
-                res_arry += list(resids)
-        return res_arry
+        res = self.data[conc.index].values - self._solution
+        return res.flatten()
 
     def run_fit(self):
         '''
         The data fitting function.
         '''
-        # Normalize the data if necessary.
-#        for key in self.useData:
-#            if self.useNorm == True:
-#                self.useData[key] = self._normalize(self.inData[key])
-#            elif self.useNorm == False:
-#                self.useData[key] = self.inData[key]
-
-        # Get parameters for the fitting process. Skip the fixed variables,
-        # which should be strings.
-#        params = []
-#        for x in self.cGuess + self.kGuess:
-#            if isinstance(x, str): continue
-#            else: params.append( float(x) )
-        mask = self.params['guess'].isna()
-        fitpars = list(self.params.loc[~mask, 'guess']) 
+        # Get parameters for the fitting process. Skip the fixed variables.
+        mask = self.params['guess'].notna()
+        fitpars = list(self.params.loc[mask, 'guess']) 
         
         # Fit the data and convert the output to various lists.
         fitdata = spo.leastsq(self._residTotal, fitpars, full_output=1)
@@ -419,45 +390,50 @@ class ODEnlls():
         if success not in [1,2,3,4] or type(cov) == type(None):
             print('There was a fitting error.')
             return False
-        
-        # Get the fit residuals and the average y value for the fitted data
-        # set (for statistical purposes).
-        self.resid = {}
-        num = 0
-        y_ave = 0
-        for k in self.useData:
-            if k in self.cpds:
-                self.resid[k] = info["fvec"][num:len(self.useData[k])+num]
-                num += len(self.useData[k])
-                y_ave += sum(self.useData[k])
-        y_ave /= len(info["fvec"])
-        
-        # Calculate the sum of squared differences of the data y values from
-        # the average y value, again for statistical purposes.
-        yave_diff = 0
-        for k in self.useData:
-            if k in self.cpds:
-                yave_diff += sum((self.useData[k]-y_ave)**2)
 
-        # Calculate the statistical parameters for the fit.
-        chiSq = sum(info["fvec"]*info["fvec"])
-        rSqrd = 1.0 - (chiSq/yave_diff)
+        self.params['fit'] = 0.0
+        self.params.loc[mask, 'fit'] = p
+        self.params.loc[~mask, 'fit'] = self.params.loc[~mask, 'fix']
 
-        # This is an additional statistical parameter for the fit called
-        # Akaike's Information Criterion. The use of this parameter is based
-        # on the following reference, which is specific to chemical kinetics
-        # fitting: Chem. Mater. 2009, 21, 4468-4479 The above reference gives
-        # a number of additional references that are not directly related to
-        # chemical kinetics.
-        self.aic = len(info["fvec"])*np.log(chiSq) + 2*len(p) + \
-                ( 2*len(p)*(len(p) + 1) )/(len(info["fvec"]) - len(p) - 1)
-
-        dof = len(info["fvec"]) - len(p)
-        sigma = np.array([np.sqrt(cov[i,i])*np.sqrt(chiSq/dof) for i in
-            range(len(p))])
+#        self.sigma = sigma; self.chiSq = chiSq
+#        self.rSqrd = rSqrd; self.dof = dof
         
-        self.fitPar = p; self.sigma = sigma; self.chiSq = chiSq
-        self.rSqrd = rSqrd; self.dof = dof
+#        # Get the fit residuals and the average y value for the fitted data
+#        # set (for statistical purposes).
+#        self.resid = {}
+#        num = 0
+#        y_ave = 0
+#        for k in self.useData:
+#            if k in self.cpds:
+#                self.resid[k] = info["fvec"][num:len(self.useData[k])+num]
+#                num += len(self.useData[k])
+#                y_ave += sum(self.useData[k])
+#        y_ave /= len(info["fvec"])
+#        
+#        # Calculate the sum of squared differences of the data y values from
+#        # the average y value, again for statistical purposes.
+#        yave_diff = 0
+#        for k in self.useData:
+#            if k in self.cpds:
+#                yave_diff += sum((self.useData[k]-y_ave)**2)
+#
+#        # Calculate the statistical parameters for the fit.
+#        chiSq = sum(info["fvec"]*info["fvec"])
+#        rSqrd = 1.0 - (chiSq/yave_diff)
+#
+#        # This is an additional statistical parameter for the fit called
+#        # Akaike's Information Criterion. The use of this parameter is based
+#        # on the following reference, which is specific to chemical kinetics
+#        # fitting: Chem. Mater. 2009, 21, 4468-4479 The above reference gives
+#        # a number of additional references that are not directly related to
+#        # chemical kinetics.
+#        self.aic = len(info["fvec"])*np.log(chiSq) + 2*len(p) + \
+#                ( 2*len(p)*(len(p) + 1) )/(len(info["fvec"]) - len(p) - 1)
+#
+#        dof = len(info["fvec"]) - len(p)
+#        sigma = np.array([np.sqrt(cov[i,i])*np.sqrt(chiSq/dof) for i in
+#            range(len(p))])
+#        
 
     def set_param(self, *args, ptype='guess'):
         '''docstring: TODO
