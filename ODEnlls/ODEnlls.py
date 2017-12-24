@@ -68,7 +68,7 @@ class ODEnlls():
                     self.odes.append(rtemp[num])
                 else:
                     index = cpds.index(v)
-                    self.odes[index] += ' + %s' % rtemp[num]
+                    self.odes[index] += ' + ' + rtemp[num]
         fileobj.close()
         
         ks = ['k{:d}'.format(i) for i in range(1, count)]
@@ -113,12 +113,14 @@ class ODEnlls():
         # Generate the full rate expression for the reaction without the
         # stoichiometry corrections necessary for each component.
         if rev == False:
-            sm_rate = '-1*k%d*%s' % (count, lrate)
-            pr_rate = 'k%d*%s' % (count, lrate)
+            sm_rate = '-1*k{:d}*{}'.format(count, lrate)
+            pr_rate = 'k{:d}*{}'.format(count, lrate)
             kcount = 1
         elif rev == True:
-            sm_rate = '-1*k%d*%s + k%d*%s' % (count, lrate, count+1, rrate)
-            pr_rate = 'k%d*%s + -1*k%d*%s' % (count, lrate, count+1, rrate)
+            sm_rate = '-1*k{:d}*{} + k{:d}*{}'.format(count, lrate, 
+                                                count+1, rrate)
+            pr_rate = 'k{:d}*{} + -1*k{:d}*{}'.format(count, lrate, 
+                                                count+1, rrate)
             kcount = 2
         
         # For each compound on the left side of the reaction, add the name to
@@ -126,7 +128,7 @@ class ODEnlls():
         # list with a correction for the stoichiometry.
         for (x, coef) in zip(sm, lstoic):
             cmpds.append(x)
-            temp = '%.2f*(%s)' % (coef, sm_rate)
+            temp = '{:.2f}*({})'.format(coef, sm_rate)
             rxns.append(temp)
 
         # Do the same thing for the products; however, check to see if the
@@ -135,12 +137,12 @@ class ODEnlls():
         for (y, coef) in zip(pr, rstoic):
             if y not in cmpds:
                 cmpds.append(y)
-                temp = '%.2f*(%s)' % (coef, pr_rate)
+                temp = '{:.2f}*({})'.format(coef, pr_rate)
                 rxns.append(temp)
             else:
                 index = cmpds.index(y)
                 newcoef = coef - lstoic[index]
-                rxns[index] = '%.2f*(%s)' % (newcoef, pr_rate)
+                rxns[index] = '{:.2f}*({})'.format(newcoef, pr_rate)
     
         return kcount, cmpds, rxns
 
@@ -153,6 +155,7 @@ class ODEnlls():
         stoic = []
         rate = ''
 
+        # Create a list of all the compounds in this half reaction
         if '+' in half:
             sp = half.split('+')
             sp = [x.strip() for x in sp]
@@ -164,21 +167,27 @@ class ODEnlls():
         else:
             sp = [half.strip()]
 
+        # Some of the compounds might be multiplied by a coefficient. Remove
+        # the coefficient to set the stoichiometry. Compounds that have a
+        # stoic of >1 will need to be divided by the stoich.
         for comp in sp:
             if '*' in comp:
                 sp2 = comp.split('*')
                 reactants.append(sp2[1])
                 stoic.append( float( sp2[0] ) )
-                temp = '(%s**%.2f)/%.2f' % (sp2[1], stoic[-1], stoic[-1])
+                temp = '({}**{:.2f})/{:.2f}'.format(sp2[1], stoic[-1], 
+                                                stoic[-1])
             else:
                 reactants.append(comp)
                 temp = comp 
                 stoic.append( 1.0 )
 
+            # Create the rate string for this half reaction. Multiple
+            # compounds will need to be multiplied together.
             if rate == '':
-                rate = '(%s)' % temp
+                rate = '({})'.format(temp)
             else:
-                rate += '*(%s)' % temp
+                rate += '*({})'.format(temp)
 
         return reactants, rate, stoic
     
