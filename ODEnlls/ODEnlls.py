@@ -186,11 +186,12 @@ class ODEnlls():
         '''
         Dynamic ODE function creation.
 
-        Take lists of rates, equilibrium constants, and reaction components
-        and creates a Python function string. This string will work with
-        scipy.odeint function, but needs to be modified if using the Sage ODE
-        simulations.
-        See scipy.integrate.odeint for function structure
+        This function creates a dynamic function that represents the ODEs for
+        this system. It does this by first creating a properly formatted
+        string that can be exectued by the interpreter to dynamically create a
+        function represented by the input reactions.
+
+        See scipy.integrate.odeint for function structure.
         '''
         # Start the function definition
         funct = 'def f(y, t, '
