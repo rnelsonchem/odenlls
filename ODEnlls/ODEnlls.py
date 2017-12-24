@@ -77,10 +77,7 @@ class ODEnlls():
         self._ks = ks
         self._cpds = cpds
 
-        self.functString = self._functGen(self.odes, count, cpds)
-        temp = {}
-        exec(self.functString, temp)
-        self.function = temp['f']
+        self._ode_function_gen()
 
     def _rxnRate(self, rxn, count=1):
         '''
@@ -185,25 +182,34 @@ class ODEnlls():
 
         return reactants, rate, stoic
     
-    def _functGen(self, rates, count, vars):
+    def _ode_function_gen(self, ):
         '''
         Take lists of rates, equilibrium constants, and reaction components
         and creates a Python function string. This string will work with
         scipy.odeint function, but needs to be modified if using the Sage ODE
         simulations.
         '''
-        k_labels = ['k%d' % (num,) for num in range(1, count)]
         funct = 'def f(y, t'
-        for k in k_labels:
+
+        for k in self._ks:
             funct += ', %s' % k
+
         funct += '):\n%sreturn [\n' % (' '*4,)
-        for rate in rates:
-            for num, var in enumerate(vars):
-                if var in rate:
-                    rate = rate.replace(var,'y[%d]' % num)
+
+        for rate in self.odes:
+            for num, cpd in enumerate(self._cpds):
+                if cpd in rate:
+                    rate = rate.replace(cpd,'y[%d]' % num)
             funct += '%s%s,\n' % (' '*8, rate)
         funct += '%s]' % (' '*8,)
-        return funct
+
+        # I needed to create a temporary dictionary for the executed function
+        # definition. This is new w/ Py3, and I'll need to explore this a
+        # little to make it more streamlined.
+        temp = {}
+        exec(funct, temp)
+        self._ode_function = temp['f']
+        self._function_string = funct
 
     ##### PLOTTING METHODS #####
             
@@ -375,8 +381,8 @@ class ODEnlls():
         if isinstance(times, type(None)):
             times = list(self.data.iloc[:,0])
         
-        solution = spi.odeint(self.function, y0=list(conc), t=times,
-                args=tuple(kvals))
+        solution = spi.odeint(self._ode_function, y0=list(conc), 
+                t=times, args=tuple(kvals))
 
         return solution
 
