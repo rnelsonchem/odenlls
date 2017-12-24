@@ -71,9 +71,11 @@ class ODEnlls():
                     self.odes[index] += ' + %s' % rtemp[num]
         fileobj.close()
         
-        klabel = ['k{:d}'.format(i) for i in range(1, count)]
+        ks = ['k{:d}'.format(i) for i in range(1, count)]
         self.params = pd.DataFrame(np.nan, columns=['guess', 'fix'], 
-                                index=cpds + klabel)
+                                index=cpds + ks)
+        self._ks = ks
+        self._cpds = cpds
 
         self.functString = self._functGen(self.odes, count, cpds)
         temp = {}
@@ -308,9 +310,8 @@ class ODEnlls():
         raw = self.data.iloc[:,1:].values
         vals_shape = raw.shape
         res_temp = info["fvec"].reshape(vals_shape)
-        cpds = self.params.filter(regex=r'^(?!k\d+$)', axis=0)
         self.residuals = self.data.copy()
-        self.residuals[cpds.index] = res_temp
+        self.residuals[self._cpds] = res_temp
 
         # Chi squared
         self.chisq = (info["fvec"]**2).sum()
@@ -349,8 +350,8 @@ class ODEnlls():
         solution = self._sim_odes(pars=pars)
         
         # Make the return np.array of residuals
-        conc = self.params.filter(regex=r'^(?!k\d+$)', axis=0)
-        res = self.data[conc.index].values - solution
+        res = self.data[self._cpds].values - solution
+
         # It must be 1D to work properly
         return res.flatten()
 
@@ -368,14 +369,14 @@ class ODEnlls():
                 guesses.loc[mask] = pars
             guesses.loc[~mask] = self.params.loc[~mask, 'fix']
 
-        conc = guesses.filter(regex=r'^(?!k\d+$)')
-        ks = guesses.filter(regex=r'^k\d+$')
+        conc = guesses[self._cpds]
+        kvals = guesses[self._ks]
 
         if isinstance(times, type(None)):
             times = list(self.data.iloc[:,0])
         
         solution = spi.odeint(self.function, y0=list(conc), t=times,
-                args=tuple(ks))
+                args=tuple(kvals))
 
         return solution
 
