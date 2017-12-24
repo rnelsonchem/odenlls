@@ -331,13 +331,14 @@ class ODEnlls():
         self.residuals = self.data.copy()
         self.residuals[self._cpds] = res_temp
 
+        # Create some statistical parameters for the fit
         # Chi squared
-        self.chisq = (info["fvec"]**2).sum()
+        chisq = (info["fvec"]**2).sum()
 
         # R-squared
         y_ave = raw.mean()
         yave_diff = ((raw - y_ave)**2).sum()
-        self.rsq = 1.0 - (self.chisq/yave_diff)
+        rsq = 1.0 - (chisq/yave_diff)
 
         # Akaike's Information Criterion. The use of this parameter is based
         # on the following reference, which is specific to chemical kinetics
@@ -346,16 +347,24 @@ class ODEnlls():
         # chemical kinetics.
         lenp = len(p)
         lenfvec = len(info["fvec"])
-        self.aic = lenfvec*np.log(self.chisq) + 2*lenp + \
+        aic = lenfvec*np.log(chisq) + 2*lenp + \
                 ( 2*lenp*(lenp + 1) )/(lenfvec - lenp - 1)
 
         # Calculate parameter errors. Make sure that parameter errors don't
         # get set for fixed values
-        self.dof = lenfvec - lenp
-        sqcsdof = np.sqrt(self.chisq/self.dof)
+        dof = lenfvec - lenp
+        sqcsdof = np.sqrt(chisq/dof)
         sigma = np.sqrt(np.diag(cov))*sqcsdof
         self.params['error'] = np.nan
         self.params.loc[mask, 'error'] = sigma
+
+        # Create a stats dictionary
+        self.stats = {
+                'chi**2': chisq,
+                'R**2' : rsq,
+                'AIC' : aic,
+                'DOF' : dof,
+                }
 
     def _residTotal(self, pars):
         '''
