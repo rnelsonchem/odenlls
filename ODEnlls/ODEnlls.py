@@ -184,24 +184,35 @@ class ODEnlls():
     
     def _ode_function_gen(self, ):
         '''
+        Dynamic ODE function creation.
+
         Take lists of rates, equilibrium constants, and reaction components
         and creates a Python function string. This string will work with
         scipy.odeint function, but needs to be modified if using the Sage ODE
         simulations.
+        See scipy.integrate.odeint for function structure
         '''
-        funct = 'def f(y, t'
+        # Start the function definition
+        funct = 'def f(y, t, '
 
-        for k in self._ks:
-            funct += ', %s' % k
+        # Add the k values to the function definition.
+        funct += ', '.join(self._ks)
 
-        funct += '):\n%sreturn [\n' % (' '*4,)
+        # Close the function def line, and start the return list of ODEs
+        funct += '):\n'
+        funct += '    return [\n' 
 
+        # Add the ODE rate lines to the function string
         for rate in self.odes:
-            for num, cpd in enumerate(self._cpds):
-                if cpd in rate:
-                    rate = rate.replace(cpd,'y[%d]' % num)
-            funct += '%s%s,\n' % (' '*8, rate)
-        funct += '%s]' % (' '*8,)
+            funct += ' '*8 + rate + ',\n'
+        funct += ' '*8 + ']'
+
+        # Replace the compound names with the appropriate values from the
+        # concentration list (i.e. `y`)
+        # WARNING: This has the potential to cause some problems. Replace may
+        # goof up if one compound name is a subset of another.
+        for n, cpd in enumerate(self._cpds):
+            funct = funct.replace(cpd, 'y[' + str(n) + ']')
 
         # I needed to create a temporary dictionary for the executed function
         # definition. This is new w/ Py3, and I'll need to explore this a
