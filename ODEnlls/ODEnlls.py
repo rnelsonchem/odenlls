@@ -5,9 +5,9 @@ reactions.
 '''
 import numpy as np 
 import matplotlib.pyplot as plt
+import pandas as pd
 import scipy.optimize as spo 
 import scipy.integrate as spi 
-import pandas as pd
 
 
 class ODEnlls():
@@ -54,12 +54,7 @@ class ODEnlls():
             
             rxn = rxn.strip()
             self.rxns.append(rxn)
-            try:
-                kcount, vtemp, rtemp = self._rxnRate(rxn, count=count)
-            except:
-                print("There was an error with your reaction file!")
-                print("See line: {}".format(rxn))
-                return False
+            kcount, vtemp, rtemp = self._rxnRate(rxn, count=count)
 
             count += kcount 
             for num, v in enumerate(vtemp):
@@ -99,16 +94,16 @@ class ODEnlls():
             halves = rxn.split('=')
             rev = True
         else:
-            return False
+            er = "The following rxn is incorrect:\n"
+            er += rxn + "\n"
+            er += "The reaction must contain a '=' or '->'"
+            raise ValueError(er)
 
         # Process the half reactions. This function returns a lits of
         # compounds in the half reaction and the rate expression for that
         # half.
-        try:
-            sm, lrate, lstoic = self._halfRxn(halves[0])
-            pr, rrate, rstoic = self._halfRxn(halves[1])
-        except:
-            return False
+        sm, lrate, lstoic = self._halfRxn(halves[0])
+        pr, rrate, rstoic = self._halfRxn(halves[1])
 
         # Generate the full rate expression for the reaction without the
         # stoichiometry corrections necessary for each component.
@@ -161,9 +156,10 @@ class ODEnlls():
             sp = [x.strip() for x in sp]
             for i in sp:
                 if sp.count(i) > 1:
-                    print("You've used an improper format.", )
-                    print("For example, instead of 'A + A' use '2*A'.")
-                    return False
+                    er = 'The following half reaction is incorrect:\n'
+                    er += half + '\n'
+                    er += 'For example, use "2*A" instead of "A + A".'
+                    raise ValueError(er)
         else:
             sp = [half.strip()]
 
@@ -324,8 +320,8 @@ class ODEnlls():
         fitdata = spo.leastsq(self._residTotal, fitpars, full_output=1)
         p, cov, info, mesg, success = fitdata 
         if success not in [1,2,3,4] or type(cov) == type(None):
-            print('There was a fitting error.')
-            return False
+            er = 'Perhaps change your guess parameters or input reactions.'
+            raise FitError(er)
 
         # Set the fit parameters in the `params` DataFrame
         self.params['fit'] = 0.0
@@ -416,6 +412,14 @@ class ODEnlls():
 
         return solution
 
+
+class FitError(Exception):
+    '''A custom error for fitting.
+
+    This doesn't do anything special. It is just a way to handle specific
+    errors that are related to fitting.
+    '''
+    pass
 
 # This function will determine the Akaike weights from a series of Akaike
 # Information Criterion fit statistic values (ODEnlls.aic).
