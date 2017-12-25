@@ -230,7 +230,7 @@ class ODEnlls():
 
     ##### PLOTTING METHODS #####
             
-    def plot(self, plottype='guess', legend=True, colorlines=False):
+    def plot(self, plottype='guess', legend=True, colorlines=False, times=None):
         '''
         Display a plot of the ODE silulation and/or data.
 
@@ -246,7 +246,17 @@ class ODEnlls():
         The colorLines boolean controls whether the ode lines are colored or
         black.
         '''
-        if plottype in ['sim', 'guess', 'fit']:
+        # Create an ODE solution for simulation
+        if plottype == 'sim':
+            # Create a generic times array if necessary
+            if isinstance(times, type(None)):
+                times = np.linspace(0, 100, 1000)
+            elif isinstance(times, (int, float)):
+                times = np.linspace(0, times, 1000)
+            solution = self._sim_odes(times=times)
+
+        # Create a times array from 
+        elif plottype in ['guess', 'fit']:
             startt = self.data.iloc[0, 0]
             finalt = self.data.iloc[-1, 0]
             times = np.linspace(startt, 1.05*finalt, 1000)
@@ -256,12 +266,11 @@ class ODEnlls():
             else: 
                 solution = self._sim_odes(times=times)
 
-            if plottype != 'sim' or colorlines == False:
+        if plottype in ['sim', 'guess', 'fit']:
+            if colorlines == False:
                 plt.plot(times, solution, 'k-')
-                legend = False
             else:
-                conc = self.params.filter(regex=r'^(?!k\d+$)', axis=0).index
-                for n, c in enumerate(conc):
+                for n, c in enumerate(self._cpds):
                     plt.plot(times, solution[:,n], label=c)
             
         if plottype in ['guess', 'fit', 'data']:
@@ -273,7 +282,9 @@ class ODEnlls():
                 plt.plot(self.residuals.iloc[:,0], self.residuals[col],
                         'o-', label=col)
 
-        if legend == True: plt.legend(numpoints=1)
+        if legend == True and \
+                not (plottype == 'sim' and colorlines == False): 
+            plt.legend(numpoints=1)
     
     ##### FITTING METHODS #####
 
