@@ -326,6 +326,11 @@ class ODEnlls():
         # Get parameters for the fitting process. Skip the fixed variables.
         mask = self.params['guess'].notna()
         fitpars = list(self.params.loc[mask, 'guess']) 
+
+        # Get a list of data compounds. I'll need this to compare with the
+        # parameter data, which might be different order/number of cpds
+        self._data_cpds = self.data.columns[1:]
+        self._data_idx = [self._cpds.index(i) for i in self._data_cpds]
         
         # Fit the data and convert the output to various lists.
         fitdata = spo.leastsq(self._residTotal, fitpars, full_output=1)
@@ -343,9 +348,10 @@ class ODEnlls():
         # up to the correct DataFrame columns.
         raw = self.data.iloc[:,1:].values
         vals_shape = raw.shape
-        res_temp = info["fvec"].reshape(vals_shape)
-        self.residuals = self.data.copy()
-        self.residuals[self._cpds] = res_temp
+        res_temp = pd.DataFrame(info["fvec"].reshape(vals_shape), 
+                            columns=self._data_cpds)
+        times = self.data.iloc[:,[0]].copy()
+        self.residuals = pd.concat([times, res_temp], axis=1)
 
         # Create some statistical parameters for the fit
         # Chi squared
@@ -393,7 +399,7 @@ class ODEnlls():
         solution = self._sim_odes(pars=pars)
         
         # Make the return np.array of residuals
-        res = self.data[self._cpds].values - solution
+        res = self.data.iloc[:,1:].values - solution[:, self._data_idx]
 
         # It must be 1D to work properly
         return res.flatten()
@@ -402,9 +408,9 @@ class ODEnlls():
         '''Run an ODE simulation with the given parameters.
         '''
         # Make a temporary parameter set so the original is unaffected.
+        # I must check if it is a string b/c numpy/pandas can cause problems.
         if isinstance(pars, str) and pars == 'fit':
             guesses = self.params['fit'].copy()
-            mask = guesses.notna()
         else:
             guesses = self.params['guess'].copy()
             mask = guesses.notna()
