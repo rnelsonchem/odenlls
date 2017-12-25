@@ -13,23 +13,25 @@ import scipy.integrate as spi
 class ODEnlls():
     ##### FILE INPUT METHODS #####
 
-    def read_data(self, filename, comment='#'):
+    def read_data(self, filename, **kwargs):
         '''
         Read in a comma-separated data file. 
         
-        This function simply reads the data file into a Pandas DataFrame
-        attribute. 
+        This is a very simple wrapper function around pandas.read_csv
+        function; however, it sets the data as the correct object attribute
+        named `data`.
 
         Parameters
         ----------
-        filename : string
+        filename : string or file handle
             The name of the data file. Can be a relative or full path as well.
             See Pandas.read_csv for more info. 
 
-        comment : string
-            The character that will denote the start of comments in the file. 
+        kwargs : dict-like
+            Arbitrary keyword arguments that can be passed to pandas.read_csv
+            function. See the docs for that function to see full options.
         '''
-        self.data = pd.read_csv(filename, comment=comment)
+        self.data = pd.read_csv(filename, **kwargs)
 
     def read_rxns(self, filename):
         '''
