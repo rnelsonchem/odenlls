@@ -44,12 +44,20 @@ class ODEnlls():
         (e.g. 2*A for two equivalents of A); irreversible reactions are
         denoted by '->'; reversible reactions are denoted by '='.
         '''
+        # Check if string filename or file object
+        if isinstance(filename, str):
+            fileobj = open(filename)
+        elif hasattr(filename, 'read'):
+            fileobj = filename
+        else:
+            raise ValueError('The file input should be a string or '
+                    'file-like object.')
+
         cpds = []
         self.odes = []
         self.rxns = []
         count = 1
 
-        fileobj = open(filename)
         for rxn in fileobj:
             if rxn.isspace(): continue
             elif rxn[0] == '#': continue
