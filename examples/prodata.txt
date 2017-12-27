@@ -1,7 +1,5 @@
-# Column labels - First number dictates the equation used
-# lkw1082
+# Sample data set
 Time,Ethene,Propene,trans2Butene,cis2Butene
-#0,0,168.5,0,0
 0.67,3.18,161.95,1.44,1.47
 2.17,10.57,148.96,5.12,3.41
 3.67,15.17,138.48,9.57,4.79
