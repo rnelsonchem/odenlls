@@ -384,11 +384,14 @@ class ODEnlls():
         aic = lenfvec*np.log(ssq) + 2*lenp + \
                 ( 2*lenp*(lenp + 1) )/(lenfvec - lenp - 1)
 
-        # Calculate parameter errors. Make sure that parameter errors don't
-        # get set for fixed values
+        # Calculate parameter errors and covariance matrix. Make sure that
+        # parameter errors don't get set for fixed values
         dof = lenfvec - lenp
-        sqcsdof = np.sqrt(ssq/dof)
-        sigma = np.sqrt(np.diag(cov))*sqcsdof
+        pcov = cov*(ssq/dof)
+        self.pcov = pd.DataFrame(pcov, columns=self.params.index,
+                index=self.params.index)
+
+        sigma = np.sqrt(np.diag(pcov))
         self.params['error'] = np.nan
         self.params.loc[mask, 'error'] = sigma
 
