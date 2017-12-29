@@ -336,6 +336,8 @@ class ODEnlls():
         # Get parameters for the fitting process. Skip the fixed variables.
         mask = self.params['guess'].notna()
         fitpars = list(self.params.loc[mask, 'guess']) 
+        # I'll need the indices to create the covariance matrix later.
+        self._fitpars_index = self.params.loc[mask, 'guess'].index
 
         # Get a list of data compounds. I'll need this to compare with the
         # parameter data, which might be different order/number of cpds
@@ -388,8 +390,8 @@ class ODEnlls():
         # parameter errors don't get set for fixed values
         dof = lenfvec - lenp
         pcov = cov*(ssq/dof)
-        self.pcov = pd.DataFrame(pcov, columns=self.params.index,
-                index=self.params.index)
+        self.pcov = pd.DataFrame(pcov, columns=self._fitpars_index,
+                index=self._fitpars_index)
 
         sigma = np.sqrt(np.diag(pcov))
         self.params['error'] = np.nan
