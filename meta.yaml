@@ -16,9 +16,6 @@ requirements:
         - pandas >=0.21.1
         - matplotlib >=2.1.1
 
-build:
-    script: python setup.py install 
-
 test:
     import:
         - ODEnlls
