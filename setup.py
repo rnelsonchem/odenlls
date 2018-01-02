@@ -5,10 +5,11 @@ with open('README.md') as f:
 
 setup(
     name = "ODEnlls",
-    version = "0.1",
+    version = "0.1.0",
 
-    description = "Non-linear least squares fitting using ODEs ' + \
-            'for chemical kinetics.",
+    description = "Non-linear least squares fitting of chemical " + \
+            "kinetics data using ODE simulations",
+
     long_description = long_description,
     url = "https://github.com/rnelsonchem/ODEnlls",
 
@@ -23,8 +24,8 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    keywords = "fitting chemical kinetics ordinary differential " + \
-            "equations ode",
+    keywords = "non-linear fitting chemical kinetics ordinary " + \
+            "differential equations ode",
 
     packages = find_packages(),
     install_requires = [
