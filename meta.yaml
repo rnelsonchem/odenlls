@@ -3,8 +3,8 @@ package:
     version: "0.1.0"
 
 source:
-    path: ./dist/ODEnlls-0.1.tar.gz
-    sha256: 924cd1d0e29db975b34500f51c4dbc44592e7dc42e8b9e21f9b8ab7653ea9519
+    path: ./dist/ODEnlls-0.1.0.tar.gz
+    sha256: 72a2a60eb65e61b61bbb31a9fa5a905385e122eda2e4fe1c608d06b104853378 
 
 requirements:
     build: 
