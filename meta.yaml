@@ -1,0 +1,21 @@
+package:
+    name: odenlls
+    version: "0.1.0"
+
+source:
+    path: ./dist/ODEnlls-0.1.tar.gz
+    sha256: 924cd1d0e29db975b34500f51c4dbc44592e7dc42e8b9e21f9b8ab7653ea9519
+
+requirements:
+    build: 
+        - python
+    run:
+        - python
+        - numpy >=1.13.3
+        - scipy >=1.0.0
+        - pandas >=0.21.1
+        - matplotlib >=2.1.1
+
+test:
+    import:
+        - ODEnlls
