@@ -1,14 +1,21 @@
 from setuptools import setup, find_packages
 
-with open('README.md') as f:
-    long_description = f.read()
+# Convert the Markdown to Restructuredtext for PyPI
+try:
+    import pypandoc
+    long_description = pypandoc.convert('README.md', 'rst')
+    long_description = long_description.replace("\r", "")
+except (IOError, ImportError):
+    print('error')
+    long_description = ''
 
 setup(
     name = "ODEnlls",
-    version = "0.1",
+    version = "0.1.0",
 
-    description = "Non-linear least squares fitting using ODEs ' + \
-            'for chemical kinetics.",
+    description = "Non-linear least squares fitting of chemical " + \
+            "kinetics data using ODE simulations",
+
     long_description = long_description,
     url = "https://github.com/rnelsonchem/ODEnlls",
 
@@ -23,8 +30,8 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    keywords = "fitting chemical kinetics ordinary differential " + \
-            "equations ode",
+    keywords = "non-linear fitting chemical kinetics ordinary " + \
+            "differential equations ode",
 
     packages = find_packages(),
     install_requires = [

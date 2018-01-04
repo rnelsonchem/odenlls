@@ -31,7 +31,7 @@ properly.
 ## Installation
 
 *ODEnlls* is installable using either Python's `pip` package manager or
-[`conda`], the package manager for the [Anaconda Python distribution].
+[conda], the package manager for the [Anaconda Python distribution].
 
 To get the latest release using `pip`, use the following command:
 
@@ -68,7 +68,7 @@ project page]. A summary of these notebooks is as follows:
 
 [py.test]: https://docs.pytest.org/en/latest/
 [Jupyter]: http://jupyter.org/
-[`conda`]: https://conda.io/docs/
+[conda]: https://conda.io/docs/
 [Anaconda Python Distribution]: https://www.anaconda.com/download/
 [GitHub project page]: https://github.com/rnelsonchem/ODEnlls
 [Notebook 1]: https://github.com/rnelsonchem/ODEnlls/blob/master/examples/1.%20First%20order%20irreversible%20kinetics%20simulation.ipynb 
