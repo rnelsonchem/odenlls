@@ -10,7 +10,7 @@ except (IOError, ImportError):
     long_description = ''
 
 setup(
-    name = "ODEnlls",
+    name = "odenlls",
     version = "0.1.0",
 
     description = "Non-linear least squares fitting of chemical " + \
