@@ -1,6 +1,6 @@
-# ODEnlls
+# odenlls
 
-*ODEnlls* is a Python3 library for simulating and fitting chemical kinetics
+*odenlls* is a Python3 library for simulating and fitting chemical kinetics
 data. These two pieces are accomplished as follows: 
 
 1. Kinetic models are simulated using numerical simulations of the ordinary
@@ -30,16 +30,16 @@ properly.
 
 ## Installation
 
-*ODEnlls* is installable using either Python's `pip` package manager or
+*odenlls* is installable using either Python's `pip` package manager or
 [conda], the package manager for the [Anaconda Python distribution].
 
 To get the latest release using `pip`, use the following command:
 
-    $ pip install ODEnlls
+    $ pip install odenlls
 
 Or to install from the latest GitHub commit:
 
-    $ pip install git+https://github.com/rnelsonchem/ODEnlls.git
+    $ pip install git+https://github.com/rnelsonchem/odenlls.git
 
 Using `conda`, the following command will install the latest release of this
 package.
@@ -48,11 +48,11 @@ package.
 
 ## Usage
 
-The *ODEnlls* module capabilities are demonstrated in several [Jupyter]
+The *odenlls* module capabilities are demonstrated in several [Jupyter]
 notebooks, which are located in the "examples" directory on the [GitHub
 project page]. A summary of these notebooks is as follows:
 
-* The [TLDR Notebook] is a very brief overview of *ODEnlls* functionality
+* The [TLDR Notebook] is a very brief overview of *odenlls* functionality
   with very little explanatory text.
 
 * [Notebook 1] demonstrates simulation of a simple first-order irreversible
@@ -70,8 +70,8 @@ project page]. A summary of these notebooks is as follows:
 [Jupyter]: http://jupyter.org/
 [conda]: https://conda.io/docs/
 [Anaconda Python Distribution]: https://www.anaconda.com/download/
-[GitHub project page]: https://github.com/rnelsonchem/ODEnlls
-[Notebook 1]: https://github.com/rnelsonchem/ODEnlls/blob/master/examples/1.%20First%20order%20irreversible%20kinetics%20simulation.ipynb 
-[Notebook 2]: https://github.com/rnelsonchem/ODEnlls/blob/master/examples/2.%20First%20order%20irreversible%20kinetics%20fitting.ipynb
-[Notebook 3]: https://github.com/rnelsonchem/ODEnlls/blob/master/examples/3.%20First%20order%20reversible%20kinetics%20simulation%20and%20fitting.ipynb
-[TLDR Notebook]: https://github.com/rnelsonchem/ODEnlls/blob/master/examples/TLDR.ipynb
+[GitHub project page]: https://github.com/rnelsonchem/odenlls
+[Notebook 1]: https://github.com/rnelsonchem/odenlls/blob/master/examples/1.%20First%20order%20irreversible%20kinetics%20simulation.ipynb 
+[Notebook 2]: https://github.com/rnelsonchem/odenlls/blob/master/examples/2.%20First%20order%20irreversible%20kinetics%20fitting.ipynb
+[Notebook 3]: https://github.com/rnelsonchem/odenlls/blob/master/examples/3.%20First%20order%20reversible%20kinetics%20simulation%20and%20fitting.ipynb
+[TLDR Notebook]: https://github.com/rnelsonchem/odenlls/blob/master/examples/TLDR.ipynb
