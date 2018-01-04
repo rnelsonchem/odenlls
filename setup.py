@@ -6,7 +6,6 @@ try:
     long_description = pypandoc.convert('README.md', 'rst')
     long_description = long_description.replace("\r", "")
 except (IOError, ImportError):
-    print('error')
     long_description = ''
 
 setup(
@@ -17,7 +16,7 @@ setup(
             "kinetics data using ODE simulations",
 
     long_description = long_description,
-    url = "https://github.com/rnelsonchem/ODEnlls",
+    url = "https://github.com/rnelsonchem/odenlls",
 
     author = "Ryan Nelson",
     author_email = "rnelsonchem@gmail.com",
