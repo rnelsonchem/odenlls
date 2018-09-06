@@ -11,6 +11,21 @@ import scipy.integrate as spi
 
 
 class ODEnlls():
+    def __init__(self, add_zero=True):
+        """Initialize the instance...
+
+        Parameters
+        ----------
+        add_zero : bool (default True)
+            This controls whether or not to add t=0 data to the ode
+            simulations. This should probably always be the case...
+        """
+        # I need to set a boolean flag for adding t=0 to the ode simulations
+        # This should probably always be True... But I put in a kwarg to
+        # ensure that it can be changed if necessary.
+        self._add_zero = add_zero
+
+
     ##### FILE INPUT METHODS #####
 
     def read_data(self, filename, **kwargs):
@@ -333,10 +348,19 @@ class ODEnlls():
 
             self.params.loc[row, ptype] = value
 
-    def run_fit(self):
+    def run_fit(self, add_zero=True):
         '''
         The data fitting function.
+
+        Parameters
+        ----------
+        add_zero: bool
+            This flag forces the addition of a t=0 line to the data file. This
+            is most likely always going to be necessary, but the flag allows
+            you to remove this if necessary.
         '''
+        self._add_zero = add_zero
+
         # Get parameters for the fitting process. Skip the fixed variables.
         mask = self.params['guess'].notna()
         fitpars = list(self.params.loc[mask, 'guess']) 
@@ -347,7 +371,7 @@ class ODEnlls():
         # parameter data, which might be different order/number of cpds
         self._data_cpds = self.data.columns[1:]
         self._data_idx = [self._cpds.index(i) for i in self._data_cpds]
-        
+
         # Fit the data and convert the output to various lists.
         fitdata = spo.leastsq(self._residTotal, fitpars, full_output=1)
         p, cov, info, mesg, success = fitdata 
