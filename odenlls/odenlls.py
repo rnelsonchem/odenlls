@@ -468,9 +468,26 @@ class ODEnlls():
 
         if isinstance(times, type(None)):
             times = list(self.data.iloc[:,0])
+
+        # Add a zero time to the simulation, if it is not present.
+        # If it is present, then set a flag to note that is the case.
+        if np.min(times) == 0.0:
+            time_zero = True
+        else:
+            time_zero = False
+
+        if self._add_zero and not time_zero:
+            temp = [0.0,]
+            temp.extend(times)
+            times = temp
         
         solution = spi.odeint(self._ode_function, y0=list(conc), 
                 t=times, args=tuple(kvals))
+
+        # If there wasn't a time zero and one was added, remove the first row
+        # from the simulation.
+        if self._add_zero and not time_zero:
+            solution = solution[1:,:]
 
         return solution
 
