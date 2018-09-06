@@ -33,6 +33,10 @@ class ODEnlls():
         '''
         self.data = pd.read_csv(filename, **kwargs)
 
+        # increment the index by 1 in order to accomodate the added zero line
+        # in the fitting, this shouldn't really break anything...
+        self.data.index += 1
+
     def read_rxns(self, filename):
         '''
         Takes a file name of fundamental reaction steps and breaks them up
