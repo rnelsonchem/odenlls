@@ -183,36 +183,41 @@ class ODEnlls():
         if '+' in half:
             sp = half.split('+')
             sp = [x.strip() for x in sp]
-            for i in sp:
-                if sp.count(i) > 1:
-                    er = 'The following half reaction is incorrect:\n'
-                    er += half + '\n'
-                    er += 'For example, use "2*A" instead of "A + A".'
-                    raise ValueError(er)
         else:
             sp = [half.strip()]
 
         # Some of the compounds might be multiplied by a coefficient. Remove
-        # the coefficient to set the stoichiometry. Compounds that have a
-        # stoic of >1 will need to be divided by the stoich.
+        # the coefficient to set the stoichiometry. 
         for comp in sp:
             if '*' in comp:
-                sp2 = comp.split('*')
-                reactants.append(sp2[1])
-                stoic.append( float( sp2[0] ) )
-                temp = '({}**{:.2f})/{:.2f}'.format(sp2[1], stoic[-1], 
-                                                stoic[-1])
+                coef, comp = comp.split('*')
+                coef = float(coef)
             else:
-                reactants.append(comp)
-                temp = comp 
-                stoic.append( 1.0 )
+                coef = 1.0
 
-            # Create the rate string for this half reaction. Multiple
-            # compounds will need to be multiplied together.
-            if rate == '':
-                rate = '({})'.format(temp)
+            if comp not in reactants:
+                reactants.append(comp)
+                stoic.append( float(coef) )
             else:
-                rate += '*({})'.format(temp)
+                idx = reactants.index(comp)
+                stoic[idx] += float(coef)
+
+            if coef == 1.0:
+                rate += '*(' + comp + ')'
+            else:
+                # Compounds multiplied by a stoiciometric coeffcient need to
+                # be raised to that power
+                rate += '*({}**{:.2f})'.format(comp, coef)
+
+        stoic_prod = np.prod(stoic)
+        # If the product of all stoiciometries is very close to 1.0, then no
+        # division necessary
+        if stoic_prod <= 1.000001 and stoic_prod >= 0.999999:
+            rate = rate[1:]
+        # Non-1.0 stoic, you must divide by that product to ensure the correct
+        # concentrations
+        else:
+            rate = rate[1:] + '/{:.2f}'.format(stoic_prod)
 
         return reactants, rate, stoic
     
