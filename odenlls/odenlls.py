@@ -111,64 +111,85 @@ class ODEnlls():
 
         Requires the function halfrxn() for each part of the reaction.
         '''
-        cmpds = []
-        rxns = []
-   
         # Determine the reaction type -- reversible or not -- and split the
         # reaction accordingly.
         if '->' in rxn:
             halves = rxn.split('->')
             rev = False
+            kcount = 1
         elif '=' in rxn:
             halves = rxn.split('=')
             rev = True
+            kcount = 2
         else:
             er = "The following rxn is incorrect:\n"
             er += rxn + "\n"
             er += "The reaction must contain a '=' or '->'"
             raise ValueError(er)
 
-        # Process the half reactions. This function returns a lits of
+        # Process the left half reaction. This function returns a lits of
         # compounds in the half reaction and the rate expression for that
         # half.
-        sm, lrate, lstoic = self._halfRxn(halves[0])
-        pr, rrate, rstoic = self._halfRxn(halves[1])
+        sms, lrate, lstoic = self._halfRxn(halves[0])
+        prs, rrate, rstoic = self._halfRxn(halves[1])
 
-        # Generate the full rate expression for the reaction without the
-        # stoichiometry corrections necessary for each component.
-        if rev == False:
-            sm_rate = '-1*k{:d}*{}'.format(count, lrate)
-            pr_rate = 'k{:d}*{}'.format(count, lrate)
-            kcount = 1
-        elif rev == True:
-            sm_rate = '-1*k{:d}*{} + k{:d}*{}'.format(count, lrate, 
-                                                count+1, rrate)
-            pr_rate = 'k{:d}*{} + -1*k{:d}*{}'.format(count, lrate, 
-                                                count+1, rrate)
-            kcount = 2
+        # Multiply the concentrations by the equilibrium constant
+        rate = 'k{:d}*{}'.format(count, lrate)
         
-        # For each compound on the left side of the reaction, add the name to
-        # our compounds list and the corresponding rate expression to our rate
-        # list with a correction for the stoichiometry.
-        for (x, coef) in zip(sm, lstoic):
-            cmpds.append(x)
-            temp = '{:.2f}*({})'.format(coef, sm_rate)
-            rxns.append(temp)
+        cmpds = []
+        rxns = []
+        lstoic_prod = np.prod(lstoic)
 
-        # Do the same thing for the products; however, check to see if the
-        # product is also in the sm list. If that's the case, then modify the
-        # stoichiometry correction accordingly.
-        for (y, coef) in zip(pr, rstoic):
-            if y not in cmpds:
-                cmpds.append(y)
-                temp = '{:.2f}*({})'.format(coef, pr_rate)
-                rxns.append(temp)
-            else:
-                index = cmpds.index(y)
-                newcoef = coef - lstoic[index]
-                rxns[index] = '{:.2f}*({})'.format(newcoef, pr_rate)
-    
+        # Process the reactants, which are disappearing
+        self._buildOde(rate, cmpds, rxns, sms, lstoic, lstoic_prod, '-')
+        # Process the products, which are growing in
+        self._buildOde(rate, cmpds, rxns, prs, rstoic, lstoic_prod, '')
+
+        if rev == True:
+            # If this is reversible, add the reversible terms as well, which
+            # are opposite to the forward rxns 
+            rate_rev = 'k{:d}*{}'.format(count+1, rrate)
+            rstoic_prod = np.prod(rstoic)
+
+            self._buildOde(rate_rev, cmpds, rxns, sms, lstoic, rstoic_prod,
+                    '')
+            self._buildOde(rate_rev, cmpds, rxns, prs, rstoic, rstoic_prod,
+                    '-')
+
         return kcount, cmpds, rxns
+
+
+    def _buildOde(self, rate, allcpds, allrxns, cpds, stoics, prod, sign=''):
+        '''Create the appropriate ODE for each compound. 
+
+        This can be done for either the products or reactants, and they are
+        combined into a larger full compound (allcpds) and full rxn (allrxn)
+        lists.
+        '''
+        for (cpd, stoic) in zip(cpds, stoics):
+            # Calculate a coefficient that adjusts the rate to take into
+            # account relative stoichiometry
+            coef = stoic/prod
+
+            # If the coefficient is pretty much 1, then we don't need to put
+            # in any adjustment. ### TODO... add a threshold
+            if coef >= 0.99999 and coef <= 1.00001:
+                temp = sign + rate
+            else:
+                # Add the factor to take into account the stoichiometry. I
+                # didn't use the coef directly, so I wouldn't introduce
+                # rounding errors
+                temp = sign + '({:.2f}/{:.2f})*{}'.format(stoic, prod, rate)
+
+            if cpd not in allcpds:
+                # Add the compound/rxn to the big lists if cpd isn't there
+                allcpds.append(cpd)
+                allrxns.append(temp)
+            else:
+                # Append the ODE to the existing one if cpd is already there.
+                idx = allcpds.index(cpd)
+                allrxns[idx] += ' + {}'.format(temp)
+        
 
     def _halfRxn(self, half):
         '''
@@ -209,17 +230,8 @@ class ODEnlls():
                 # be raised to that power
                 rate += '*({}**{:.2f})'.format(comp, coef)
 
-        stoic_prod = np.prod(stoic)
-        # If the product of all stoiciometries is very close to 1.0, then no
-        # division necessary
-        if stoic_prod <= 1.000001 and stoic_prod >= 0.999999:
-            rate = rate[1:]
-        # Non-1.0 stoic, you must divide by that product to ensure the correct
-        # concentrations
-        else:
-            rate = rate[1:] + '/{:.2f}'.format(stoic_prod)
+        return reactants, rate[1:], stoic
 
-        return reactants, rate, stoic
     
     def _ode_function_gen(self, ):
         '''
