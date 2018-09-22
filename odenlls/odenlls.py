@@ -83,16 +83,17 @@ class ODEnlls():
             
             rxn = rxn.strip()
             self.rxns.append(rxn)
-            kcount, vtemp, rtemp = self._rxnRate(rxn, count=count)
+            kcount, cpdtemp, ratetemp = self._rxnRate(rxn, count=count)
 
             count += kcount 
-            for num, v in enumerate(vtemp):
-                if v not in cpds:
-                    cpds.append(v)
-                    self.odes.append(rtemp[num])
+            for c, r in zip(cpdtemp, ratetemp):
+                if c not in cpds:
+                    cpds.append(c)
+                    self.odes.append(r)
                 else:
-                    index = cpds.index(v)
-                    self.odes[index] += ' + ' + rtemp[num]
+                    index = cpds.index(c)
+                    self.odes[index] += ' + ' + r
+
         fileobj.close()
         
         ks = ['k{:d}'.format(i) for i in range(1, count)]
@@ -224,11 +225,11 @@ class ODEnlls():
                 stoic[idx] += float(coef)
 
             if coef == 1.0:
-                rate += '*(' + comp + ')'
+                rate += '*([' + comp + '])'
             else:
                 # Compounds multiplied by a stoiciometric coeffcient need to
                 # be raised to that power
-                rate += '*({}**{:.2f})'.format(comp, coef)
+                rate += '*([{}]**{:.2f})'.format(comp, coef)
 
         return reactants, rate[1:], stoic
 
@@ -261,10 +262,11 @@ class ODEnlls():
 
         # Replace the compound names with the appropriate values from the
         # concentration list (i.e. `y`)
-        # WARNING: This has the potential to cause some problems. Replace may
-        # goof up if one compound name is a subset of another.
+        # WARNING: This has the potential to cause some problems if the
+        # compound names has some [] in it. However, this is a very unusual
+        # case I would image
         for n, cpd in enumerate(self._cpds):
-            funct = funct.replace(cpd, 'y[' + str(n) + ']')
+            funct = funct.replace('[' + cpd + ']', 'y[' + str(n) + ']')
 
         # I needed to create a temporary dictionary for the executed function
         # definition. This is new w/ Py3, and I'll need to explore this a
