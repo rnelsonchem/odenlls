@@ -276,6 +276,15 @@ class ODEnlls():
         self._ode_function = temp['f']
         self._function_string = funct
 
+
+    def print_odes(self, ):
+        '''Pretty printing function for the ODEs'''
+        if not hasattr(self, 'odes'):
+            raise ValueError('No rxns processed yet, so no ODEs.')
+
+        for c, o in zip(self._cpds, self.odes):
+            print('D['+c+']/dt =', o)
+
     ##### PLOTTING METHODS #####
             
     def plot(self, plottype='guess', legend=True, colorlines=False, times=None):
