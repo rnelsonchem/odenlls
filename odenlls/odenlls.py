@@ -328,6 +328,11 @@ class ODEnlls():
             plt.legend(numpoints=1)
     
     def simulate(self, times=None, npts=1000, simtype='sim'):
+        '''Run the ODE simulation using the current parameters.
+
+        This function does not return anything, but instead creates a `sim`
+        DataFrame. This can be used for custom plotting, for example.
+        '''
         # Create a times array
         if simtype in ['guess', 'fit']:
             startt = self.data.iloc[0, 0]
