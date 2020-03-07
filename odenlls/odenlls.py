@@ -303,32 +303,15 @@ class ODEnlls():
         The colorLines boolean controls whether the ode lines are colored or
         black.
         '''
-        # Create an ODE solution for simulation
-        if plottype == 'sim':
-            # Create a generic times array if necessary
-            if isinstance(times, type(None)):
-                times = np.linspace(0, 100, 1000)
-            elif isinstance(times, (int, float)):
-                times = np.linspace(0, times, 1000)
-            solution = self._sim_odes(times=times)
-
-        # Create a times array from 
-        elif plottype in ['guess', 'fit']:
-            startt = self.data.iloc[0, 0]
-            finalt = self.data.iloc[-1, 0]
-            times = np.linspace(startt, 1.05*finalt, 1000)
-
-            if plottype == 'fit':
-                solution = self._sim_odes(pars='fit', times=times)
-            else: 
-                solution = self._sim_odes(times=times)
-
         if plottype in ['sim', 'guess', 'fit']:
+            # Generate the simulated data
+            self.simulate(times=times, simtype=plottype)
+
             if colorlines == False:
-                plt.plot(times, solution, 'k-')
+                plt.plot(times, self.sims, 'k-')
             else:
                 for n, c in enumerate(self._cpds):
-                    plt.plot(times, solution[:,n], label=c)
+                    plt.plot(times, self.sims[:,n], label=c)
             
         if plottype in ['guess', 'fit', 'data']:
             for col in self.data.columns[1:]:
@@ -343,6 +326,29 @@ class ODEnlls():
                 not (plottype == 'sim' and colorlines == False): 
             plt.legend(numpoints=1)
     
+    def simulate(self, times=None, npts=1000, simtype='sim'):
+        # Create a times array
+        if simtype in ['guess', 'fit']:
+            startt = self.data.iloc[0, 0]
+            finalt = self.data.iloc[-1, 0]
+            times = np.linspace(startt, 1.05*finalt, npts)
+        elif isinstance(times, type(None)) and simtype == 'sim':
+            times = np.linspace(0, 100, npts)
+        elif isinstance(times, (int, float)) and simtype == 'sim':
+            times = np.linspace(0, times, npts)
+
+        # Chose the parameter set for the simulation
+        if simtype == 'fit':
+            pars = 'fit'
+        else:
+            pars = None
+        
+        # Generate the ODE solution
+        sims = self._sim_odes(pars=pars, times=times)
+
+        self.sims = pd.DataFrame(np.c_[times, sims], 
+                                columns=['Times']+self._cpds)
+
     ##### FITTING METHODS #####
 
     def set_param(self, *args, ptype='guess'):
