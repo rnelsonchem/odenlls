@@ -308,10 +308,11 @@ class ODEnlls():
             self.simulate(times=times, simtype=plottype)
 
             if colorlines == False:
-                plt.plot(times, self.sims, 'k-')
+                plt.plot(self.sims['Times'], self.sims.iloc[:,1:], 'k-')
             else:
                 for n, c in enumerate(self._cpds):
-                    plt.plot(times, self.sims[:,n], label=c)
+                    plt.plot(self.sims['Times'], self.sims.iloc[:,n+1], 
+                            label=c)
             
         if plottype in ['guess', 'fit', 'data']:
             for col in self.data.columns[1:]:
